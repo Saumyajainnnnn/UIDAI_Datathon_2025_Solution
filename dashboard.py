@@ -1,6 +1,9 @@
 import streamlit as st
 import os
 from PIL import Image
+import json
+import pandas as pd
+import plotly.express as px
 from src.ai_insights import get_ai_insights
 
 # ==========================================
@@ -35,8 +38,9 @@ st.sidebar.info("Data Source: UIDAI Anonymised Dataset 2025")
 # MAIN PAGE
 # ==========================================
 
+
 if page == "Executive Summary":
-    st.title("🇮🇳 Aadhaar Identity Health Engine")
+    st.title("Aadhaar Identity Health Engine")
     st.markdown("### National Level Status Report")
 
     # Metrics Row
@@ -48,6 +52,109 @@ if page == "Executive Summary":
 
     st.divider()
 
+    st.subheader("Aadhaar Identity Risk Map (District Level)")
+
+    st.markdown(
+        "Hover over a district to view its **Identity Health Index** and **Risk Category**."
+    )
+
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("output/final_health_index.csv")
+        with open("data/india_district.geojson", "r", encoding="utf-8") as f:
+            geojson = json.load(f)
+        return df, geojson
+
+    df, india_geojson = load_data()
+
+    def clean_name(x):
+        if pd.isna(x):
+            return x
+        return str(x).replace("*", "").strip().title()
+
+    df["district_clean"] = df["district"].apply(clean_name)
+    df["state_clean"] = df["state"].apply(clean_name)
+
+    state_fix = {
+        "Nct Of Delhi": "Delhi",
+        "Jammu And Kashmir": "Jammu and Kashmir",
+        "Jammu & Kashmir": "Jammu and Kashmir"
+    }
+    df["state_clean"] = df["state_clean"].replace(state_fix)
+
+    df["risk_category_clean"] = df["risk_category"]
+
+    zero_activity_mask = (
+        (df["enrol_total_vol"] == 0) &
+        (df["bio_total_vol"] == 0) &
+        (df["demo_total_vol"] == 0)
+    )
+
+    df.loc[zero_activity_mask, "risk_category_clean"] = "No Data / Inactive"
+
+    risk_colors = {
+        "Critical Risk": "#d7191c",
+        "Moderate": "#fdae61",
+        "Healthy": "#1a9641",
+        "No Data / Inactive": "#bdbdbd" # grey
+    }
+
+    fig = px.choropleth(
+    df,
+    geojson=india_geojson,
+    locations="district_clean",
+    featureidkey="properties.NAME_2",
+    color="risk_category_clean",
+    color_discrete_map=risk_colors,
+    hover_name="district_clean",
+    hover_data={
+        "state_clean": True,
+        "health_index": ":.1f",
+        "risk_category_clean": True,
+        "district_clean": False
+    },
+    labels={
+        "state_clean": "State",
+        "health_index": "Health Index",
+        "risk_category_clean": "Risk Category"
+    }
+)
+
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+    st.plotly_chart(fig, width="stretch")
+
+    with st.expander("How to interpret this map"):
+        st.markdown("""
+        **What this shows**  
+        Each district is coloured by its Aadhaar **Identity Health Risk Category**, derived from a composite health score.  
+        ⚪ Grey — No recorded Aadhaar activity or insufficient data during the analysis period.
+
+        **What is the Health Index?**  
+        The **Health Index (0–100)** is a composite score that measures how well a district’s Aadhaar ecosystem is functioning.
+
+        It combines:
+        • **Enrolment performance** — how much Aadhaar activity the district handles  
+        • **Operational stability** — consistency of activity over time  
+        • **Biometric compliance** — especially child biometric updates  
+        • **Infrastructure proxy** — overall system capacity  
+
+        Higher scores indicate a more reliable, stable, and compliant identity system.
+
+        **What is the Risk Category?**  
+        Each district is classified into a risk group based on its Health Index and performance patterns:
+
+        • 🔴 **Critical Risk** — High stress, weak compliance, or unstable operations  
+        • 🟡 **Moderate** — Functional but inconsistent performance  
+        • 🟢 **Healthy** — Strong volume handling with high stability and compliance  
+        • ⚪ **No Data / Inactive** — No measurable Aadhaar activity in the analysis window  
+
+        **How to use it**  
+        • Hover over districts to inspect **State**, **Health Index**, and **Risk Category**  
+        • Identify regional clusters of systemic risk  
+        • Prioritize audits, mobile units, and policy action in high-risk zones
+        """)
     # The Hero Chart (Chart 4)
     st.subheader("1. The Solution: Identity Health Clusters (ML)")
     
@@ -60,21 +167,16 @@ if page == "Executive Summary":
     else:
         st.error("Chart 4 not found. Please run main.py first.")
 
-    st.info("💡 Insight: High Aadhaar volume does not guarantee system health—compliance and stability matter more.")
+    st.info("Insight: High Aadhaar volume does not guarantee system health—compliance and stability matter more.")
 
-    with st.expander("📘 How to interpret this chart"):
+    with st.expander("How to interpret this chart"):
         st.markdown("""
         **What this chart shows**  
         Each dot represents a district, clustered using Machine Learning based on Aadhaar volume, operational stability, and compliance quality.
 
         **How to read the axes**  
         • **X-axis (Total Volume – Log Scale):** Left = low-activity districts, Right = high-activity districts  
-        • **Y-axis (Health Index 0–100):** Bottom = unstable or non-compliant systems, Top = stable and reliable systems  
-
-        **What the colors mean**  
-        • 🔴 **Critical Risk:** High operational stress or poor compliance  
-        • 🟡 **Moderate:** Functional but inconsistent performance  
-        • 🟢 **Healthy:** High throughput with strong stability and compliance  
+        • **Y-axis (Health Index 0–100):** Bottom = unstable or non-compliant systems, Top = stable and reliable systems   
 
         **Why this matters**  
         • High activity does not automatically imply a healthy identity system  
@@ -88,7 +190,7 @@ if page == "Executive Summary":
 
 
 elif page == "Operational Analysis":
-    st.title("⚙️ Operational Efficiency & Inequality")
+    st.title("Operational Efficiency & Inequality")
 
     col1, col2 = st.columns(2)
 
@@ -101,8 +203,8 @@ elif page == "Operational Analysis":
         img = load_chart("8_Pincode_Variance.png")
         if img: st.image(img)
 
-        st.info("💡 Insight: Districts may appear functional overall, yet hide severe service overload at specific pincodes.")
-        with st.expander("📘 How to interpret this chart"):
+        st.info("Insight: Districts may appear functional overall, yet hide severe service overload at specific pincodes.")
+        with st.expander("How to interpret this chart"):
             st.markdown("""
             **What this shows**  
             This chart visualizes how Aadhaar enrolment and update transactions are distributed across 
@@ -132,8 +234,8 @@ elif page == "Operational Analysis":
         img = load_chart("EDA_1_Enrolment_Trend.png")
         if img: st.image(img)
         
-        st.info("💡 Insight: Aadhaar enrolment demand is not uniform—child enrolments are seasonal, adults are structural.")
-        with st.expander("📘 How to interpret this chart"):
+        st.info("Insight: Aadhaar enrolment demand is not uniform—child enrolments are seasonal, adults are structural.")
+        with st.expander("How to interpret this chart"):
             st.markdown("""
             **What this shows**  
             This chart compares monthly enrolment volumes for children and adults from March to December 2025.
@@ -157,7 +259,7 @@ elif page == "Operational Analysis":
 
 
 elif page == "Risk & Security":
-    st.title("🛡️ Fraud & Compliance Sentinel")
+    st.title("Fraud & Compliance Sentinel")
 
     st.subheader("Automated Fraud Detection (Security Sentinel)")
     st.write(
@@ -168,9 +270,9 @@ elif page == "Risk & Security":
     img = load_chart("7_Anomaly_Sentinel.png")
     if img: st.image(img, width=700)
 
-    st.info("💡 Insight: The Security Sentinel isolates true anomalies without noise, enabling proactive fraud response.")
+    st.info("Insight: The Security Sentinel isolates true anomalies without noise, enabling proactive fraud response.")
 
-    with st.expander("📘 How to interpret this chart"):
+    with st.expander("How to interpret this chart"):
         st.markdown("""
         **What this shows**  
         This chart tracks daily Aadhaar transaction volumes and highlights days that deviate sharply from historical patterns.
@@ -212,9 +314,9 @@ elif page == "Risk & Security":
         img = load_chart("EDA_2_Bio_Split.png")
         if img: st.image(img)
 
-        st.info("💡 Insight: Equal biometric updates for children and adults are a warning sign—children should dominate update volume.")
+        st.info("Insight: Equal biometric updates for children and adults are a warning sign—children should dominate update volume.")
 
-        with st.expander("📘 How to interpret this chart"):
+        with st.expander("How to interpret this chart"):
             st.markdown("""
             **What this shows**  
             This chart compares the share of biometric updates performed for children versus adults.
@@ -247,9 +349,9 @@ elif page == "Risk & Security":
         img = load_chart("5_child_risk_gap.png")
         if img: st.image(img)
 
-        st.info("💡 Insight: Aadhaar enrolment without biometric updates creates silent identity failure among children.")
+        st.info("Insight: Aadhaar enrolment without biometric updates creates silent identity failure among children.")
 
-        with st.expander("📘 How to interpret this chart"):
+        with st.expander("How to interpret this chart"):
             st.markdown("""
             **What this shows**  
             This chart highlights districts with large gaps between child enrolments and biometric updates, indicating incomplete or outdated identities.
@@ -274,7 +376,6 @@ elif page == "Risk & Security":
             • Mobile update units in high-gap districts  
             • Shift district KPIs from enrolment counts to update completion
             """)
-
 
 
 elif page == "AI Interpretation":
@@ -342,4 +443,3 @@ elif page == "AI Interpretation":
             
             The AI combines insights from ALL graphs to provide holistic recommendations.
             """)
-
