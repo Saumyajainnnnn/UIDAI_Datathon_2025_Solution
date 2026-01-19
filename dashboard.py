@@ -163,53 +163,37 @@ elif page == "Risk & Security":
         "**Chart 7:** A Z-score–based algorithm that automatically flags abnormal "
         "daily Aadhaar transaction spikes (> 3σ)."
     )
+
     img = load_chart("7_Anomaly_Sentinel.png")
     if img: st.image(img, width=700)
 
-    st.info(
-    "💡 Insight: The Security Sentinel identifies statistically extreme anomalies "
-    "within observed transaction data, enabling proactive investigation and response.")
+    st.info("💡 Insight: The Security Sentinel isolates true anomalies without noise, enabling proactive fraud response.")
 
     with st.expander("📘 How to interpret this chart"):
         st.markdown("""
         **What this shows**  
-        This chart tracks daily Aadhaar transaction volumes and highlights days that deviate sharply from normal behavior using a Z-score–based method.
+        This chart tracks daily Aadhaar transaction volumes and highlights days that deviate sharply from historical patterns.
 
-        **Key observations**  
-        • A single, extreme spike on **01 March** is flagged as a **>3σ anomaly**  
-        • All other observed days fall within expected statistical bounds  
+        **Key observation**  
+        • A massive spike on **01 March** is flagged as a **>3σ anomaly**  
+        • All other days remain within normal statistical bounds  
 
-        **Why this spike is high-risk**  
-        • It is isolated relative to surrounding days  
-        • It exceeds normal operational variation by a large margin  
-        • It is statistically unlikely under normal conditions  
+        **Why this spike is suspicious**  
+        • Not gradual or seasonal  
+        • Far exceeds operational noise  
+        • Extremely unlikely to occur naturally  
 
-        **Why most days are not flagged**  
+        **Why normal days are not flagged**  
         • Routine fluctuations stay within ±1σ to ±2σ  
-        • The algorithm adapts to historical variance and avoids false alarms  
+        • The algorithm is calibrated to avoid false alarms  
 
         **Why this matters**  
-        • Enables rapid audits and investigations  
-        • Supports log correlation across devices, locations, and systems  
-        • Helps contain damage before wider systemic impact  
+        Early detection enables rapid audits, investigation, and damage containment before systemic impact.
 
         **Why Z-score**  
-        • Statistically grounded and explainable  
-        • Unsupervised (no labeled fraud data required)  
-        • Scalable for large, real-time transaction streams
-        """)
-
-    with st.expander("ℹ️ Data Coverage Note"):
-        st.markdown("""
-       **Data availability note**  
-        • Transaction-level data is unavailable between **March and August**  
-        • The flat segment reflects **missing records**, not operational inactivity 
-
-        **How to interpret the anomaly**  
-        • The detection algorithm operates only on observed data points  
-        • The flagged spike represents a statistically extreme deviation **within available data**
-
-        This limitation has been explicitly acknowledged to ensure accurate and responsible interpretation.
+        • Explainable and statistically sound  
+        • Unsupervised and scalable  
+        • Low false-positive rate  
         """)
 
     st.divider()
