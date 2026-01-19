@@ -46,7 +46,7 @@ def clean_standardize(df, prefix):
     # Garbage Filter: Remove states with numbers (Data Quality Control)
     df = df[~df['state'].str.contains(r'\d', regex=True, na=False)]
 
-    state_map = {'Westbengal': 'West Bengal', 'Orissa': 'Odisha', 'Uttaranchal': 'Uttarakhand', 'Delhi': 'NCT Of Delhi'}
+    state_map = {'Westbengal': 'West Bengal', 'Orissa': 'Odisha', 'Uttaranchal': 'Uttarakhand', 'Delhi': 'NCT Of Delhi', 'Tamilnadu': 'Tamil Nadu'}
     df['state'] = df['state'].replace(state_map)
 
     # 3. Temporal Standardization
