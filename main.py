@@ -43,6 +43,7 @@ def main():
     # ---------------------------------------------------------
     # Uses K-Means to cluster districts into Critical/Moderate/Healthy
     health_df = generate_health_index(df_pincode_features)
+    health_df.to_csv("output/final_health_index.csv", index=False)
 
     print("[SOLUTION] Chart 4: Identity Health Index Generated via ML Clustering.")
     critical = health_df[health_df['risk_category'] == 'Critical Risk']
