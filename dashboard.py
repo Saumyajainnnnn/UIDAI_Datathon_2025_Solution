@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from PIL import Image
+from src.ai_insights import get_ai_insights
 
 # ==========================================
 # CONFIGURATION
@@ -26,7 +27,7 @@ def load_chart(filename):
 # ==========================================
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/en/c/cf/Aadhaar_Logo.svg", width=150)
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to:", ["Executive Summary", "Operational Analysis", "Risk & Security", "Predictive AI"])
+page = st.sidebar.radio("Go to:", ["Executive Summary", "Operational Analysis", "Risk & Security", "AI Interpretation"])
 
 st.sidebar.info("Data Source: UIDAI Anonymised Dataset 2025")
 
@@ -276,12 +277,69 @@ elif page == "Risk & Security":
 
 
 
-elif page == "Predictive AI":
-    st.title("🤖 Future Workload Forecasting")
+elif page == "AI Interpretation":
+    st.title(" AI-Powered Business Insights for UIDAI")
+    
+    st.divider()
+    
+    # Check if API key is configured
+    if not os.path.exists(".env"):
+        st.error(" **Configuration Required**")
+        st.stop()
+    
+    # Generate insights button
+    if st.button(" Generate AI Business Insights", type="primary", use_container_width=True):
+        with st.spinner(" AI is analyzing all graphs and generating comprehensive insights for UIDAI..."):
+            insights, error = get_ai_insights()
+            
+            if error:
+                st.error(f"**Error:** {error}")
+                st.markdown("""
+                **Troubleshooting Steps:**
+                1. Check your `.env` file exists and contains: `api_key=your_actual_key`
+                2. Verify your API key from [Groq Console](https://console.groq.com/keys)
+                3. Ensure you have internet connectivity
+                4. Check if you have remaining API quota
+                """)
+            else:
+                st.success(" AI insights generated successfully!")
+                st.markdown(insights)
+                
+            
+    else:
+        # Show preview of what will be generated
+        st.info(" Click the button above to generate AI-powered insights")
+        
+        
+        st.divider()
+        
+        st.markdown("###  Based on Analysis of:")
+        
+        metrics_cols = st.columns(3)
+        
+        with metrics_cols[0]:
+            st.metric("Graphs Analyzed", "6", "Comprehensive")
+            st.caption("All visualization insights")
+        
+        with metrics_cols[1]:
+            st.metric("Districts Covered", "32,168", "Pincodes")
+            st.caption("Complete national coverage")
+        
+        with metrics_cols[2]:
+            st.metric("Data Points", "2M+", "Records")
+            st.caption("Enrolment + Biometric + Demographic")
+        
+        st.divider()
+        
+        with st.expander(" Individual Graph Insights Used"):
+            st.markdown("""
+            1. **Enrolment Temporal Consistency** - Seasonal patterns and capacity planning
+            2. **Biometric Splits** - Child vs adult update distribution analysis
+            3. **Identity Health Clusters (ML)** - District-level system health classification
+            4. **Child Identity Risk Zones** - Enrolment-update gap analysis
+            5. **Anomaly Detection** - Fraud spike identification
+            6. **Pincode Variance** - Intra-district resource distribution
+            
+            The AI combines insights from ALL graphs to provide holistic recommendations.
+            """)
 
-    st.subheader("AI Resource Planning")
-    st.write("We used Holt-Winters Exponential Smoothing to predict load for the next 90 days.")
-    st.info("💡 Insight: A 15% surge is predicted in the next quarter due to seasonal trends.")
-
-    img = load_chart("9_Workload_Forecast.png")
-    if img: st.image(img, use_container_width=True)
